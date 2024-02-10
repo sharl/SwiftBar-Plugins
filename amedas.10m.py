@@ -20,6 +20,11 @@ import requests
 
 TIMEOUT=10
 WD = '静穏 北北東 北東 東北東 東 東南東 南東 南南東 南 南南西 南西 西南西 西 西北西 北西 北北西 北'.split()
+mode = os.environ.get('OS_APPEARANCE', 'Dark')
+textcolor = {
+    'Light': 'darkslategray',
+    'Dark': 'aliceblue',
+}[mode]
 
 
 class AMEDAS:
@@ -64,7 +69,7 @@ class AMEDAS:
                     h = '24'
                 m = last_key[10:12]
                 lines = [
-                    self.loc.get('kjName', '-') + f' {h}:{m}'
+                    self.loc.get('kjName', '-') + f' {h}:{m} | color={textcolor}'
                 ]
                 for x in [
                         '気温 temp 度',
@@ -79,12 +84,12 @@ class AMEDAS:
                     t, k, u = x.split()
                     if k in _vars:
                         if k == 'windDirection':
-                            lines.append(f'{t} {WD[_vars[k][0]]}')
+                            lines.append(f'{t} {WD[_vars[k][0]]} | color={textcolor}')
                         else:
                             if 'snow' not in _vars and k == 'snow1h':
                                 continue
                             else:
-                                lines.append(f'{t} {_vars[k][0]}{u}')
+                                lines.append(f'{t} {_vars[k][0]}{u} | color={textcolor}')
                 title = '\n'.join(lines)
 
                 print(title)
