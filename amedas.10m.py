@@ -14,6 +14,7 @@
 # <swiftbar.hideSwiftBar>true</swiftbar.hideSwiftBar>
 
 import os
+import json
 import datetime as dt
 
 import requests
@@ -25,19 +26,101 @@ textcolor = {
     'Light': 'darkslategray',
     'Dark': 'aliceblue',
 }[mode]
+HOST = '127.0.0.1'
+PORT = 50021
+ずんだもん = [3, 22]    # 気温
+四国めたん = [2, 36]    # 積雪
 
 
 class AMEDAS:
     def __init__(self):
         self.code = '44132'             # 東京
         self.loc = {}
+        self.temp = 100
+        self.snow = 0
+        self.vvox = True
+        self.now = dt.datetime.now(dt.timezone(dt.timedelta(hours=9)))
 
         # スポット情報取得
         home = os.environ.get('HOME', '.')
         with open(f'{home}/.amedas') as fd:
             self.code = fd.read().strip()
+        # 直前の情報を取得
+        self.file = f'{home}/.amedas.settings'
+        try:
+            with open(self.file) as fd:
+                self.settings = json.load(fd)
+                self.temp = self.settings['temp']
+                self.snow = self.settings['snow']
+                self.vvox = self.settings['vvox']
+        except Exception:
+            # 存在しなかったらデフォルトを作成
+            self.write_rc()
 
+        self.check_VVOX()
         self.amedas()
+        self.write_rc()
+
+    def write_rc(self):
+        with open(self.file, 'w') as fd:
+            fd.write(json.dumps(
+                {
+                    'temp': self.temp,
+                    'snow': self.snow,
+                    'vvox': self.vvox,
+                },
+                indent=2,
+            ))
+
+    def check_VVOX(self, host=HOST, port=PORT):
+        if self.vvox:
+            try:
+                requests.get(
+                    f'http://{host}:{port}/docs',
+                    timeout=1,
+                )
+                self.vvox = True
+            except Exception:
+                self.vvox = False
+
+    def VVOX(self, text, host=HOST, port=PORT, speakers=[3]):
+        import pyaudio
+
+        # 声を時間によって使い分ける
+        if speakers and isinstance(speakers, list):
+            hh = int(self.now.strftime('%H'))
+            if hh < 7:
+                speaker = speakers[-1]
+            else:
+                speaker = speakers[0]
+        params = {
+            'text': text,
+            'speaker': speaker,
+            'prePhonemeLength': 0,
+        }
+        query = requests.post(
+            f'http://{host}:{port}/audio_query',
+            params=params,
+        )
+        synthesis = requests.post(
+            f'http://{host}:{port}/synthesis',
+            headers={'Content-Type': 'application/json'},
+            params=params,
+            data=json.dumps(query.json()),
+        )
+        voice = synthesis.content
+
+        au = pyaudio.PyAudio()
+        stream = au.open(
+            format=pyaudio.paInt16,         # 16bit
+            channels=1,                     # モノラル
+            rate=24000,                     # 設定の「音声のサンプリングレート」に合わせる デフォルトは24000
+            output=True,
+        )
+        stream.write(voice)
+        stream.stop_stream()
+        stream.close()
+        au.terminate()
 
     def amedas(self):
         try:
@@ -50,7 +133,7 @@ class AMEDAS:
         except Exception:
             pass
 
-        now = dt.datetime.now(dt.timezone(dt.timedelta(hours=9))) - dt.timedelta(minutes=10)
+        now = self.now - dt.timedelta(minutes=10)
         yyyymmdd = now.strftime('%Y%m%d')
         HH = now.strftime('%H')
         hh = f'{int(HH) // 3 * 3:02d}'
@@ -83,16 +166,37 @@ class AMEDAS:
                 ]:
                     t, k, u = x.split()
                     if k in _vars:
+                        v = _vars[k][0]
+
+                        # VOICEVOX ---start
+                        if k == 'temp':
+                            if int(v) != int(self.temp):
+                                pm = ''
+                                vv = v
+                                if vv < 0:
+                                    pm = 'マイナス'
+                                    vv = -vv
+                                self.temp = v
+                                self.VVOX(f'{pm}{vv}度になったのだ', speakers=ずんだもん)
+                        if k == 'snow':
+                            if int(v) != int(self.snow):
+                                self.snow = v
+                                self.VVOX(f'{v}センチになったわ', speakers=四国めたん)
+                        # VOICEVOX ---end
+
                         if k == 'windDirection':
-                            lines.append(f'{t} {WD[_vars[k][0]]} | color={textcolor}')
+                            lines.append(f'{t} {WD[v]} | color={textcolor}')
                         else:
                             if 'snow' not in _vars and k == 'snow1h':
                                 continue
                             else:
-                                lines.append(f'{t} {_vars[k][0]}{u} | color={textcolor}')
-                title = '\n'.join(lines)
+                                lines.append(f'{t} {v}{u} | color={textcolor}')
+                body = '\n'.join(lines)
 
-                print(title)
+                vvoxcolor = 'red' if self.vvox else 'gray'
+                print(body)
+                print('---')
+                print(f'VOICEVOX | color={vvoxcolor} checked={str(self.vvox).lower()}')
         except Exception:
             pass
 
