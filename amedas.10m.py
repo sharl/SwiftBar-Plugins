@@ -18,7 +18,7 @@ import datetime as dt
 
 import requests
 
-TIMEOUT=10
+TIMEOUT = 10
 WD = '静穏 北北東 北東 東北東 東 東南東 南東 南南東 南 南南西 南西 西南西 西 西北西 北西 北北西 北'.split()
 mode = os.environ.get('OS_APPEARANCE', 'Dark')
 textcolor = {
