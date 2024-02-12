@@ -13,6 +13,17 @@
 [東京](https://www.jma.go.jp/bosai/amedas/#amdno=44132)は `44132` です。
 *#amdno=数字* が観測地点コードになります。
 
+#### 設定ファイル`~/.amedas.settings` 書式
+```
+{
+  "temp": -0.6,
+  "snow": 79,
+  "vvox": true
+}
+```
+自動で作成され、次回のリフレッシュ時に気温や積雪量を比較して変化したときに [VOICEVOX](https://voicevox.hiroshiba.jp/) でしゃべるようになります。
+VOICEVOX Engine と疎通が取れない場合は自動で `vvox` が `false` になるため、再度しゃべらせる場合は この設定ファイルを削除してみてください。
+
 ### hamu.py
 
 #### 設定ファイル `~/.location` 書式
