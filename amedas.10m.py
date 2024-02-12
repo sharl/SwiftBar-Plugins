@@ -152,7 +152,8 @@ class AMEDAS:
                     h = '24'
                 m = last_key[10:12]
                 lines = [
-                    self.loc.get('kjName', '-') + f' {h}:{m} | color={textcolor}'
+                    self.loc.get('kjName', '-') + f' {h}:{m} | color={textcolor}',
+                    '---',
                 ]
                 for x in [
                         '気温 temp 度',
