@@ -2,6 +2,15 @@
 
 [SwiftBar](https://swiftbar.app/) の自作プラグイン
 
+## 動作前提条件
+
+- Python3+
+```
+pip3 install --upgrade requests bs4 Pillow Pyaudio
+```
+
+## プラグイン
+
 ### amedas.10m.py
 
 #### 設定ファイル `~/.amedas` 書式
