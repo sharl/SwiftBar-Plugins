@@ -57,3 +57,7 @@ https://weather.yahoo.co.jp/weather/zoomradar/?lat=43.06144807&lon=141.35373725&
 [横浜 消防出動情報](https://cgi.city.yokohama.lg.jp/shobo/disaster/)の情報を表示します。
 
 特に設定はありません。
+
+### Yeelight Toggle.py
+
+Yeelight 製品の電源をトグルします。
