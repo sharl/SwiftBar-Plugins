@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 # METADATA
 # <xbar.title>札幌 消防出動情報</xbar.title>
-# <xbar.version>v1.0</xbar.version>
+# <xbar.version>v1.1</xbar.version>
 # <xbar.author>Sharl Morlaroll</xbar.author>
 # <xbar.author.github>sharl</xbar.author.github>
-# <xbar.desc>アメダス地点の最新データを表示します</xbar.desc>
+# <xbar.desc></xbar.desc>
 # <xbar.dependencies>python3.11+, requests</xbar.dependencies>
 # <swiftbar.hideAbout>true</swiftbar.hideAbout>
 # <swiftbar.hideRunInTerminal>true</swiftbar.hideRunInTerminal>
 # <swiftbar.hideLastUpdated>true</swiftbar.hideLastUpdated>
 # <swiftbar.hideDisablePlugin>true</swiftbar.hideDisablePlugin>
-# <swiftbar.hideSwiftBar>true</swiftbar.hideSwiftBar
+# <swiftbar.hideSwiftBar>true</swiftbar.hideSwiftBar>
 
 import os
 import re
@@ -38,5 +38,3 @@ if m:
 
     if lines:
         print('\n'.join(lines))
-    else:
-        print(MARK)
