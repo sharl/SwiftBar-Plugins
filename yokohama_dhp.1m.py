@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # METADATA
 # <xbar.title>横浜 消防出動情報</xbar.title>
-# <xbar.version>v1.0</xbar.version>
+# <xbar.version>v1.1</xbar.version>
 # <xbar.author>Sharl Morlaroll</xbar.author>
 # <xbar.author.github>sharl</xbar.author.github>
 # <xbar.desc></xbar.desc>
@@ -30,7 +30,7 @@ r = requests.get(URL)
 content = r.content.decode('utf-8')
 m = re.search(r'(?s)<font size=2 color=black >.*?<hr.*?>', content)
 if m:
-    match = re.sub(r'<.*?>', '', m[0]).replace('\u3000', '').replace('\r', '').replace('で発生した災害に、消防隊等が出場しています。', '')
+    match = re.sub(r'で発生した..に、.*?等が出場しています。', '', re.sub(r'<.*?>', '', m[0]).replace('\u3000', '').replace('\r', ''))
     lines = []
     for line in match.split('\n'):
         if line:
