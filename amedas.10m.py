@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # METADATA
 # <xbar.title>amedas</xbar.title>
-# <xbar.version>v1.0</xbar.version>
+# <xbar.version>v1.1</xbar.version>
 # <xbar.author>Sharl Morlaroll</xbar.author>
 # <xbar.author.github>sharl</xbar.author.github>
 # <xbar.desc>アメダス地点の最新データを表示します</xbar.desc>
@@ -19,6 +19,9 @@ import datetime as dt
 
 import requests
 
+# ICON or INFO
+MENU_ICON = False
+
 TIMEOUT = 10
 WD = '静穏 北北東 北東 東北東 東 東南東 南東 南南東 南 南南西 南西 西南西 西 西北西 北西 北北西 北'.split()
 mode = os.environ.get('OS_APPEARANCE', 'Dark')
@@ -26,6 +29,8 @@ textcolor = {
     'Light': 'darkslategray',
     'Dark': 'aliceblue',
 }[mode]
+
+# VOICEVOX SETTINGS
 HOST = '127.0.0.1'
 PORT = 50021
 ずんだもん = [3, 22]    # 気温
@@ -169,6 +174,9 @@ class AMEDAS:
                     if k in _vars:
                         v = _vars[k][0]
 
+                        if k == 'humidity':
+                            self.humidity = v
+
                         # VOICEVOX ---start
                         if k == 'temp':
                             if int(v) != int(self.temp):
@@ -194,15 +202,25 @@ class AMEDAS:
                                 lines.append(f'{t} {v}{u} | color={textcolor}')
                 body = '\n'.join(lines)
 
-                vvoxcolor = 'red' if self.vvox else 'gray'
+                if MENU_ICON:
+                    print('⛱')
+                else:
+                    header = [
+                        f'{self.temp}C',
+                        f'{self.humidity}%',
+                    ]
+                    if self.snow:
+                        header.append(f'{self.snow}cm')
+                    print(' '.join(header))
+
+                print('---')
                 print(body)
                 print('---')
+                vvoxcolor = 'red' if self.vvox else 'gray'
                 print(f'VOICEVOX | color={vvoxcolor} checked={str(self.vvox).lower()}')
         except Exception:
             pass
 
 
 if __name__ == '__main__':
-    print('⛱')
-    print('---')
     AMEDAS()
