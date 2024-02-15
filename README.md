@@ -45,3 +45,15 @@ https://weather.yahoo.co.jp/weather/zoomradar/?lat=43.06144807&lon=141.35373725&
 ### amesh.py
 
 特に設定はありません。
+
+### sapporo_dhp.1m.py
+
+[札幌 消防出動情報](http://www.119.city.sapporo.jp/saigai/sghp.html)の情報を表示します。
+
+特に設定はありません。
+
+### yokohama_dhp.1m.py
+
+[横浜 消防出動情報](https://cgi.city.yokohama.lg.jp/shobo/disaster/)の情報を表示します。
+
+特に設定はありません。
