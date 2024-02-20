@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # <xbar.title>はむ</xbar.title>
-# <xbar.version>v1.0</xbar.version>
+# <xbar.version>v1.1</xbar.version>
 # <xbar.author>Sharl Morlaroll</xbar.author>
 # <xbar.author.github>sharl</xbar.author.github>
 # <xbar.desc>いろいろな気象情報を表示します</xbar.desc>
@@ -48,6 +48,7 @@ class AMEHAMU:
 
         return None
 
+
 class TenkiJP:
     def __init__(self, mode='気温'):
         print('mode', mode)
@@ -84,6 +85,8 @@ menus = {
     6: '天気図',
     7: '台風',
     8: '台風広域',
+    9: 'スギ花粉',
+    10: 'ヒノキ花粉',
 }
 
 if len(sys.argv) == 1:
@@ -141,3 +144,26 @@ else:
                 if r and r.status_code == 200:
                     img = Image.open(io.BytesIO(r.content)).convert('RGB')
                     img.show()
+    elif menu >= 9 and menu < 11:
+        params = {
+            9: 'https://tenki.jp/pollen/mesh/',
+            10: 'https://tenki.jp/pollen/mesh/cypress.html',
+        }
+        for param in params:
+            if param == menu:
+                url = params[param]
+                user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
+                headers = {
+                    'User-Agent': user_agent
+                }
+                r = requests.get(url, headers=headers, timeout=10)
+                if r and r.status_code == 200:
+                    soup = BeautifulSoup(r.content, 'html.parser')
+                    og_images = soup.find_all('meta', property="og:image")
+                    if len(og_images) == 0:
+                        continue
+                    img_url = og_images[0].get('content')
+                    r = requests.get(img_url, timeout=TIMEOUT)
+                    if r and r.status_code == 200:
+                        img = Image.open(io.BytesIO(r.content)).convert('RGB')
+                        img.show()
