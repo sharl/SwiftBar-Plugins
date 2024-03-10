@@ -67,7 +67,7 @@ if __name__ == '__main__':
     dfs = [df.mountpoint for df in psutil.disk_partitions()]
     usage = 0
     for df in dfs:
-        if df == '/':
+        if df == '/' or df.startswith('/Volumes'):
             continue
         du = psutil.disk_usage(df)
         usage += du.percent
