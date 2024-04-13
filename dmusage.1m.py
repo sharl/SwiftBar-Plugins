@@ -21,59 +21,53 @@ import psutil
 from PIL import Image, ImageDraw
 
 
-def pieUsage(d_rate, m_rate, canvas=800, offs=10, hemp=100):
-    img = Image.new('RGBA', (canvas * 2, canvas))
+def pieUsage(rates, canvas=800, offs=10, hemp=100):
+    parts = len(rates)
+    img = Image.new('RGBA', (canvas * parts, canvas))
     draw = ImageDraw.Draw(img)
 
-    # disk
-    start = 270 - 360 * d_rate
-    end = 270
+    for i, rate in enumerate(rates):
+        start = 270 - 360 * rate
+        end = 270
 
-    xy = [
-        (offs, hemp),
-        (canvas - offs, canvas - hemp),
-    ]
-    # 使用領域
-    draw.pieslice(
-        xy,
-        start, end,
-        fill='Red',
-        outline='Red',
-        width=10,
-    )
+        xy = [
+            (offs + canvas * i, hemp),
+            (canvas * (i + 1) - offs, canvas - hemp),
+        ]
+        # 使用率
+        draw.pieslice(
+            xy,
+            start, end,
+            fill='Red',
+            outline='Red',
+            width=1,
+        )
 
-    # memory
-    start = 270 - 360 * m_rate
-    end = 270
-
-    xy = [
-        (offs + canvas, hemp),
-        (canvas * 2 - offs, canvas - hemp),
-    ]
-    # 空き領域
-    draw.pieslice(
-        xy,
-        end, start,
-        fill='Grey',
-        outline='Red',
-        width=10,
-    )
-    im = img.resize((16 * 2, 16))
+    im = img.resize((16 * parts, 16))
     return im
 
 
 if __name__ == '__main__':
     # disk
     dfs = [df.mountpoint for df in psutil.disk_partitions()]
-    usage = 0
+    s_usage = 0
+    v_usage = 0
     for df in dfs:
-        if df == '/' or df.startswith('/Volumes'):
+        if df == '/':
             continue
         du = psutil.disk_usage(df)
-        usage += du.percent
+        if df.startswith('/System/'):
+            s_usage += du.percent
+        else:
+            v_usage += du.percent
     # memmory
     mem = psutil.virtual_memory()
-    img = pieUsage(usage / 100, mem.percent / 100, canvas=320, offs=2, hemp=0)
+
+    rates = [s_usage / 100]
+    if v_usage:
+        rates.append(v_usage / 100)
+    rates.append(mem.percent / 100)
+    img = pieUsage(rates, canvas=320, offs=16, hemp=0)
 
     _, tmpfile = tempfile.mkstemp()
     img.save(tmpfile, format='PNG')
@@ -86,4 +80,9 @@ if __name__ == '__main__':
 
     print(icon)
     print('---')
-    print(f'{usage}% {mem.percent}%')
+
+    lines = [f'{s_usage:2.1f}%']
+    if v_usage:
+        lines.append(f'{v_usage:2.1f}%')
+    lines.append(f'{mem.percent:2.1f}%')
+    print(' '.join(lines))
