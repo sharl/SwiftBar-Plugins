@@ -24,9 +24,6 @@ import requests
 import matplotlib.pyplot as plt
 from PIL import Image, ImageOps
 
-# ICON or INFO
-MENU_ICON = False
-
 TIMEOUT = 10
 WD = '静穏 北北東 北東 東北東 東 東南東 南東 南南東 南 南南西 南西 西南西 西 西北西 北西 北北西 北'.split()
 mode = os.environ.get('OS_APPEARANCE', 'Dark')
@@ -245,17 +242,17 @@ class AMEDAS:
 
                         # VOICEVOX ---start
                         if k == 'temp':
+                            self.temp = v
                             if int(v) != int(self.temp):
                                 pm = ''
                                 vv = v
                                 if vv < 0:
                                     pm = 'マイナス'
                                     vv = -vv
-                                self.temp = v
                                 self.VVOX(f'{pm}{vv}度になったのだ', speakers=ずんだもん)
                         if k == 'snow':
+                            self.snow = v
                             if int(v) != int(self.snow):
-                                self.snow = v
                                 self.VVOX(f'{v}センチになったわ', speakers=四国めたん)
                         # VOICEVOX ---end
 
@@ -268,17 +265,14 @@ class AMEDAS:
                                 lines.append(f'{t} {v}{u} | color={textcolor}')
                 body = '\n'.join(lines)
 
-                if MENU_ICON:
-                    print('⛱')
-                else:
-                    header = [
-                        f'{self.temp}C',
-                        f'{self.humidity}%',
-                        f'{self.pressure}hPa',
-                    ]
-                    if self.snow:
-                        header.append(f'{self.snow}cm')
-                    print(' '.join(header) + f' | templateImage={self.graph()}')
+                header = [
+                    f'{self.temp}C',
+                    f'{self.humidity}%',
+                    f'{self.pressure}hPa',
+                ]
+                if self.snow:
+                    header.append(f'{self.snow}cm')
+                print(' '.join(header) + f' | templateImage={self.graph()}')
 
                 print('---')
                 print(body)
