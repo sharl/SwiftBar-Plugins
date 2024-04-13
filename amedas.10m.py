@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.11
 # -*- coding: utf-8 -*-
 # METADATA
 # <xbar.title>amedas</xbar.title>
@@ -14,10 +14,15 @@
 # <swiftbar.hideSwiftBar>true</swiftbar.hideSwiftBar>
 
 import os
+import io
 import json
 import datetime as dt
+import tempfile
+import base64
 
 import requests
+import matplotlib.pyplot as plt
+from PIL import Image, ImageOps
 
 # ICON or INFO
 MENU_ICON = False
@@ -127,6 +132,65 @@ class AMEDAS:
         stream.close()
         au.terminate()
 
+    def graph(self):
+        time_temp = {}
+        time_humidity = {}
+        time_pressure = {}
+        for delta in range(9):
+            now = self.now - dt.timedelta(hours=delta * 3) - dt.timedelta(minutes=10)
+            yyyymmdd = now.strftime('%Y%m%d')
+            HH = now.strftime('%H')
+            hh = f'{int(HH) // 3 * 3:02d}'
+
+            # JSONデータのURL
+            url = f'https://www.jma.go.jp/bosai/amedas/data/point/{self.code}/{yyyymmdd}_{hh}.json'
+
+            # データを取得
+            response = requests.get(url)
+            data = response.json()
+
+            # 気圧データと時間データを取得
+            for tim in data.keys():
+                time_temp[tim] = data[tim]['temp'][0]
+                time_humidity[tim] = data[tim]['humidity'][0]
+                time_pressure[tim] = data[tim]['pressure'][0]
+
+        time_data = []
+        temp_data = []
+        humidity_data = []
+        pressure_data = []
+        for tim in sorted(time_pressure):
+            time_data.append(tim)
+            temp_data.append(time_temp[tim])
+            humidity_data.append(time_humidity[tim])
+            pressure_data.append(time_pressure[tim])
+
+        # グラフを描画
+        fig, ax = plt.subplots(1, 3, figsize=(3, 1), tight_layout=True)
+        ax[0].axis('off')
+        ax[0].plot(time_data, temp_data, color='black')
+        ax[1].axis('off')
+        ax[1].plot(time_data, humidity_data, color='black')
+        ax[2].axis('off')
+        ax[2].plot(time_data, pressure_data, color='black')
+
+        buf = io.BytesIO()
+        fig.savefig(buf, format='PNG')
+        plt.close(fig)
+        buf.seek(0)
+        img = Image.open(buf).convert('RGB')
+        img = img.resize((img.width * 30 // img.height, 30))
+
+        _, tmpfile = tempfile.mkstemp()
+        img = ImageOps.invert(img)
+        img.save(tmpfile, format='PNG')
+        with open(tmpfile, 'rb') as fd:
+            img_bytes = base64.b64encode(fd.read())
+        os.unlink(tmpfile)
+        b64img = img_bytes.decode('ascii')
+
+        return b64img
+
     def amedas(self):
         try:
             r = requests.get(
@@ -176,6 +240,8 @@ class AMEDAS:
 
                         if k == 'humidity':
                             self.humidity = v
+                        if k == 'pressure':
+                            self.pressure = v
 
                         # VOICEVOX ---start
                         if k == 'temp':
@@ -208,10 +274,11 @@ class AMEDAS:
                     header = [
                         f'{self.temp}C',
                         f'{self.humidity}%',
+                        f'{self.pressure}hPa',
                     ]
                     if self.snow:
                         header.append(f'{self.snow}cm')
-                    print(' '.join(header))
+                    print(' '.join(header) + f' | templateImage={self.graph()}')
 
                 print('---')
                 print(body)

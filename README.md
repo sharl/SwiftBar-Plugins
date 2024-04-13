@@ -6,7 +6,7 @@
 
 - Python3+
 ```
-pip3 install --upgrade requests bs4 Pillow Pyaudio
+pip3 install --upgrade requests bs4 Pillow Pyaudio matplotlib
 ```
 
 ## プラグイン
