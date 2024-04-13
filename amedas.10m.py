@@ -33,7 +33,7 @@ textcolor = {
 }[mode]
 
 # VOICEVOX SETTINGS
-HOST = '127.0.0.1'
+HOST = '192.168.0.1'
 PORT = 50021
 ずんだもん = [3, 22]    # 気温
 四国めたん = [2, 36]    # 積雪
@@ -44,6 +44,8 @@ class AMEDAS:
         self.code = '44132'             # 東京
         self.loc = {}
         self.temp = 100
+        self.humidity = 0
+        self.pressure = 0
         self.snow = 0
         self.vvox = True
         self.now = dt.datetime.now(dt.timezone(dt.timedelta(hours=9)))
@@ -129,10 +131,11 @@ class AMEDAS:
         stream.close()
         au.terminate()
 
-    def graph(self):
+    def graph(self, header):
         time_temp = {}
         time_humidity = {}
         time_pressure = {}
+        time_snow = {}
         for delta in range(9):
             now = self.now - dt.timedelta(hours=delta * 3) - dt.timedelta(minutes=10)
             yyyymmdd = now.strftime('%Y%m%d')
@@ -148,28 +151,50 @@ class AMEDAS:
 
             # 気圧データと時間データを取得
             for tim in data.keys():
-                time_temp[tim] = data[tim]['temp'][0]
-                time_humidity[tim] = data[tim]['humidity'][0]
-                time_pressure[tim] = data[tim]['pressure'][0]
+                if self.temp != 100:
+                    time_temp[tim] = data[tim]['temp'][0]
+                if self.humidity:
+                    time_humidity[tim] = data[tim]['humidity'][0]
+                if self.pressure:
+                    time_pressure[tim] = data[tim]['pressure'][0]
+                if self.snow and 'snow' in data[tim]:
+                    time_snow[tim] = data[tim]['snow'][0]
 
-        time_data = []
         temp_data = []
         humidity_data = []
         pressure_data = []
-        for tim in sorted(time_pressure):
-            time_data.append(tim)
+        snow_data = []
+
+        for tim in sorted(time_temp):
             temp_data.append(time_temp[tim])
+        for tim in sorted(time_humidity):
             humidity_data.append(time_humidity[tim])
+        for tim in sorted(time_pressure):
             pressure_data.append(time_pressure[tim])
+        for tim in sorted(time_snow.keys()):
+            snow_data.append(time_snow[tim])
 
         # グラフを描画
-        fig, ax = plt.subplots(1, 3, figsize=(3, 1), tight_layout=True)
-        ax[0].axis('off')
-        ax[0].plot(time_data, temp_data, color='black')
-        ax[1].axis('off')
-        ax[1].plot(time_data, humidity_data, color='black')
-        ax[2].axis('off')
-        ax[2].plot(time_data, pressure_data, color='black')
+        fig, ax = plt.subplots(1, len(header), figsize=(len(header), 1), tight_layout=True)
+
+        idx = 0
+
+        if time_temp:
+            ax[idx].axis('off')
+            ax[idx].plot(sorted(time_temp), temp_data, color='black')
+            idx += 1
+        if time_snow:
+            ax[idx].axis('off')
+            ax[idx].plot(sorted(time_snow), snow_data, color='black')
+            idx += 1
+        if time_humidity:
+            ax[idx].axis('off')
+            ax[idx].plot(sorted(time_humidity), humidity_data, color='black')
+            idx += 1
+        if time_pressure:
+            ax[idx].axis('off')
+            ax[idx].plot(sorted(time_pressure), pressure_data, color='black')
+            idx += 1
 
         buf = io.BytesIO()
         fig.savefig(buf, format='PNG')
@@ -204,83 +229,88 @@ class AMEDAS:
         HH = now.strftime('%H')
         hh = f'{int(HH) // 3 * 3:02d}'
         url = f'https://www.jma.go.jp/bosai/amedas/data/point/{self.code}/{yyyymmdd}_{hh}.json'
-        try:
-            r = requests.get(url, timeout=TIMEOUT)
-            if r and r.status_code == 200:
-                data = r.json()
-                base_key = f'{yyyymmdd}{HH}0000'        # 積雪は1時間毎
-                last_key = list(data.keys())[-1]
-                _vars = data[base_key]
-                for k in data[last_key]:
-                    _vars[k] = data[last_key][k]
-                h = last_key[8:10]
-                if h == '00':
-                    h = '24'
-                m = last_key[10:12]
-                lines = [
-                    self.loc.get('kjName', '-') + f' {h}:{m} | color={textcolor}',
-                    '---',
-                ]
-                for x in [
-                        '気温 temp 度',
-                        '降水 precipitation1h mm/h',
-                        '風向 windDirection -',
-                        '風速 wind m/s',
-                        '積雪 snow cm',
-                        '降雪 snow1h cm/h',
-                        '湿度 humidity %',
-                        '気圧 pressure hPa',
-                ]:
-                    t, k, u = x.split()
-                    if k in _vars:
-                        v = _vars[k][0]
 
-                        if k == 'humidity':
-                            self.humidity = v
-                        if k == 'pressure':
-                            self.pressure = v
+        r = requests.get(url, timeout=TIMEOUT)
+        if r and r.status_code == 200:
+            data = r.json()
+            base_key = f'{yyyymmdd}{HH}0000'        # 積雪は1時間毎
+            last_key = list(data.keys())[-1]
+            _vars = data[base_key]
+            for k in data[last_key]:
+                _vars[k] = data[last_key][k]
+            h = last_key[8:10]
+            if h == '00':
+                h = '24'
+            m = last_key[10:12]
+            lines = [
+                self.loc.get('kjName', '-') + f' {h}:{m} | color={textcolor}',
+                '---',
+            ]
+            for x in [
+                    '気温 temp 度',
+                    '降水 precipitation1h mm/h',
+                    '風向 windDirection -',
+                    '風速 wind m/s',
+                    '積雪 snow cm',
+                    '降雪 snow1h cm/h',
+                    '湿度 humidity %',
+                    '気圧 pressure hPa',
+            ]:
+                t, k, u = x.split()
+                if k in _vars:
+                    v = _vars[k][0]
 
-                        # VOICEVOX ---start
-                        if k == 'temp':
-                            self.temp = v
-                            if int(v) != int(self.temp):
-                                pm = ''
-                                vv = v
-                                if vv < 0:
-                                    pm = 'マイナス'
-                                    vv = -vv
-                                self.VVOX(f'{pm}{vv}度になったのだ', speakers=ずんだもん)
-                        if k == 'snow':
-                            self.snow = v
-                            if int(v) != int(self.snow):
-                                self.VVOX(f'{v}センチになったわ', speakers=四国めたん)
-                        # VOICEVOX ---end
+                    if k == 'humidity':
+                        self.humidity = v
+                    if k == 'pressure':
+                        self.pressure = v
 
-                        if k == 'windDirection':
-                            lines.append(f'{t} {WD[v]} | color={textcolor}')
+                    # VOICEVOX ---start
+                    if k == 'temp':
+                        if int(v) != int(self.temp):
+                            pm = ''
+                            vv = v
+                            if vv < 0:
+                                pm = 'マイナス'
+                                vv = -vv
+                            self.VVOX(f'{pm}{vv}度になったのだ', speakers=ずんだもん)
+                        self.temp = v
+                    if k == 'snow':
+                        if int(v) != int(self.snow):
+                            self.VVOX(f'{v}センチになったわ', speakers=四国めたん)
+                        self.snow = v
+                    # VOICEVOX ---end
+
+                    if k == 'windDirection':
+                        lines.append(f'{t} {WD[v]} | color={textcolor}')
+                    else:
+                        if 'snow' not in _vars and k == 'snow1h':
+                            continue
                         else:
-                            if 'snow' not in _vars and k == 'snow1h':
-                                continue
-                            else:
-                                lines.append(f'{t} {v}{u} | color={textcolor}')
-                body = '\n'.join(lines)
+                            lines.append(f'{t} {v}{u} | color={textcolor}')
+            body = '\n'.join(lines)
 
-                header = [
-                    f'{self.temp}C',
-                    f'{self.humidity}%',
-                    f'{self.pressure}hPa',
-                ]
-                if self.snow:
-                    header.append(f'{self.snow}cm')
-                print(' '.join(header) + f' | templateImage={self.graph()}')
+            header = []
+            if self.temp != 100:
+                header.append(f'{self.temp}C')
+            if self.snow:
+                header.append(f'{self.snow}cm')
+            if self.humidity:
+                header.append(f'{self.humidity}%')
+            if self.pressure:
+                header.append(f'{self.pressure}hPa')
 
-                print('---')
-                print(body)
-                print('---')
-                vvoxcolor = 'red' if self.vvox else 'gray'
-                print(f'VOICEVOX | color={vvoxcolor} checked={str(self.vvox).lower()}')
-        except Exception:
-            pass
+            if header:
+                b64image = self.graph(header)
+                print(' '.join(header) + f' | templateImage={b64image}')
+            else:
+                print('☔️')
+
+            print('---')
+            print(body)
+            print('---')
+            vvoxcolor = 'red' if self.vvox else 'gray'
+            print(f'VOICEVOX | color={vvoxcolor} checked={str(self.vvox).lower()}')
 
 
 if __name__ == '__main__':
