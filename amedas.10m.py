@@ -52,8 +52,11 @@ class AMEDAS:
 
         # スポット情報取得
         home = os.environ.get('HOME', '.')
-        with open(f'{home}/.amedas') as fd:
-            self.code = fd.read().strip()
+        try:
+            with open(f'{home}/.amedas') as fd:
+                self.code = fd.read().strip()
+        except Exception:
+            pass
         # 直前の情報を取得
         self.file = f'{home}/.amedas.settings'
         try:
