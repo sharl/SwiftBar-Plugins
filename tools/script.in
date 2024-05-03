@@ -1,0 +1,12 @@
+#!/bin/bash
+# <swiftbar.runInBash>false</swiftbar.runInBash>
+
+cfile=/var/tmp/frame
+count=$(cat $cfile 2> /dev/null)
+
+test "x$count" = "x" && count=1
+test $count -ge ____ && exit
+
+echo "| templateImage=$(cat "__CWD__/out/${count}.b64")"
+
+echo $((count + 1)) > $cfile
