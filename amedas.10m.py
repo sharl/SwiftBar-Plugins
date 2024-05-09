@@ -278,7 +278,7 @@ class AMEDAS:
                                 vv = -vv
                             self.VVOX(f'{pm}{vv}度になったのだ', speakers=ずんだもん)
                         self.temp = v
-                    if k == 'snow':
+                    if k == 'snow' and v is not None:
                         if int(v) != int(self.snow):
                             self.VVOX(f'{v}センチになったわ', speakers=四国めたん)
                         self.snow = v
