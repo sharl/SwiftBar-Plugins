@@ -287,7 +287,7 @@ class AMEDAS:
                     if k == 'windDirection':
                         lines.append(f'{t} {WD[v]} | color={textcolor}')
                     else:
-                        if 'snow' not in _vars and k == 'snow1h':
+                        if ('snow' not in _vars and k == 'snow1h') or (_vars[k][1] != 0):
                             continue
                         else:
                             lines.append(f'{t} {v}{u} | color={textcolor}')
